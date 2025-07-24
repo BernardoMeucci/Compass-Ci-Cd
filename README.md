@@ -20,6 +20,16 @@ Este trabalho foi desenvolvido como parte do **Programa de Bolsas - DevSecOps da
 
 ---
 
+### 🏛️ Arquitetura do Projeto
+
+O projeto é composto por dois repositórios principais, seguindo o padrão GitOps de separação de responsabilidades:
+
+1.  **`Compass-Ci-Cd` (Este Repositório):** Contém o código-fonte da aplicação FastAPI (`main.py`), a definição da imagem Docker (`Dockerfile`), e a definição do workflow de CI/CD do GitHub Actions (`.github/workflows/ci-cd.yml`).
+
+2.  **`Compass-Ci-Cd-MANIFESTS`:** (Repositório separado: [https://github.com/BernardoMeucci/Compass-Ci-Cd-MANIFESTS](https://github.com/BernardoMeucci/Compass-Ci-Cd-MANIFESTS)) Contém os manifests do Kubernetes (`deployment.yaml` e `service.yaml`) que descrevem como a aplicação deve ser implantada no cluster.
+
+---
+
 ### 🛠️ Tecnologias Utilizadas
 
 * **Aplicação:**
@@ -35,35 +45,45 @@ Este trabalho foi desenvolvido como parte do **Programa de Bolsas - DevSecOps da
 
 ---
 
-###  ✨ Fluxo da Automação
+### ✨ Fluxo da Automação
 
 <details>
-<summary><strong>Clique para ver as etapas e os resultados do projeto</strong></summary>
+<summary><strong>Clique para ver o passo a passo detalhado do pipeline</strong></summary>
+<br>
 
-#### 1. O Gatilho: `git push`
-Tudo começa quando um desenvolvedor envia uma alteração de código para o branch `main` do repositório da aplicação.
+1.  **Gatilho Inicial: Commit do Desenvolvedor**
+    - O ciclo é iniciado quando um `git push` é feito para o branch `main` do repositório da aplicação (`Compass-Ci-Cd`).
 
-#### 2. A Pipeline de CI no GitHub Actions
-O `push` aciona um workflow no GitHub Actions que executa duas tarefas principais:
-- **Build & Push:** Constrói uma nova imagem Docker da aplicação e a envia para o Docker Hub com uma tag única (o hash do commit).
-- **Update Manifests:** Faz o checkout do repositório de manifestos e atualiza o arquivo `deployment.yaml` com a nova tag da imagem, enviando um novo commit de volta para o repositório de manifestos.
+2.  **Etapa de CI: Execução do Workflow no GitHub Actions**
+    - O `push` aciona o workflow definido em `.github/workflows/ci-cd.yml`.
+    - O workflow executa dois jobs sequenciais:
+        - **Job 1: `build-and-push`**:
+            - Faz o checkout do código da aplicação.
+            - Realiza o login no Docker Hub usando segredos (`secrets`).
+            - Constrói a imagem Docker a partir do `Dockerfile`.
+            - Envia a nova imagem para o Docker Hub com uma tag única baseada no hash do commit.
+        - **Job 2: `update-manifest`**:
+            - Faz o checkout do repositório de manifestos.
+            - Utiliza o comando `sed` para substituir a tag da imagem no arquivo `deployment.yaml` pela nova tag gerada no passo anterior.
+            - Realiza um novo `commit` e `push` para o repositório de manifestos, registrando a nova versão desejada da aplicação.
 
-#### 3. A Mágica do GitOps com ArgoCD
-O ArgoCD, que está constantemente monitorando o repositório de manifestos, detecta o novo commit. Ele compara o "estado desejado" (descrito no Git) com o "estado atual" (rodando no Kubernetes) e percebe a diferença.
+3.  **Etapa de CD: Sincronização com ArgoCD**
+    - O ArgoCD, que monitora continuamente o repositório de manifestos, detecta o novo commit feito pelo GitHub Actions.
+    - Ele compara o estado definido no Git com o estado atual do cluster e identifica uma divergência (status `OutOfSync`).
+    - Como a política de sincronização é `Automatic`, o ArgoCD inicia imediatamente o processo para reconciliar o estado do cluster.
 
-<p align="center">
-  <img src="imagens/argo-final-status.png" alt="Status Final da Aplicação no ArgoCD" width="700"/>
-</p>
+    <p align="center">
+      <img src="imagens/argo-final-status.png" alt="Status Final da Aplicação no ArgoCD" width="700"/>
+    </p>
 
-#### 4. O Deploy Contínuo (CD)
-Automaticamente, o ArgoCD inicia o processo de sincronização, comandando o Kubernetes para baixar a nova imagem do Docker Hub e atualizar os pods da aplicação, completando o deploy sem qualquer intervenção manual.
+4.  **Estado Final: Deploy no Kubernetes**
+    - O ArgoCD instrui o Kubernetes a aplicar o manifesto atualizado.
+    - O Kubernetes executa um "rolling update" no `Deployment` da aplicação, substituindo os pods antigos pelos novos com a nova imagem Docker, de forma gradual e sem indisponibilidade.
+    - A nova versão da aplicação está no ar e pode ser acessada.
 
-#### 5. O Resultado Final
-A nova versão da aplicação está no ar e pode ser acessada pelos usuários.
-
-<p align="center">
-  <img src="imagens/api-final-response.png" alt="Resposta Final da API no Navegador" width="700"/>
-</p>
+    <p align="center">
+      <img src="imagens/api-final-response.png" alt="Resposta Final da API no Navegador" width="700"/>
+    </p>
 
 </details>
 
