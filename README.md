@@ -73,7 +73,7 @@ O projeto é composto por dois repositórios principais, seguindo o padrão GitO
     - Como a política de sincronização é `Automatic`, o ArgoCD inicia imediatamente o processo para reconciliar o estado do cluster.
 
     <p align="center">
-      <img src="imagens/argo-final-status.png" alt="Status Final da Aplicação no ArgoCD" width="700"/>
+      <img src="imagens/argo-final-status.jpeg" alt="Status Final da Aplicação no ArgoCD" width="700"/>
     </p>
 
 4.  **Estado Final: Deploy no Kubernetes**
@@ -82,7 +82,7 @@ O projeto é composto por dois repositórios principais, seguindo o padrão GitO
     - A nova versão da aplicação está no ar e pode ser acessada.
 
     <p align="center">
-      <img src="imagens/api-final-response.png" alt="Resposta Final da API no Navegador" width="700"/>
+      <img src="imagens/api-final-response.jpeg" alt="Resposta Final da API no Navegador" width="700"/>
     </p>
 
 </details>
